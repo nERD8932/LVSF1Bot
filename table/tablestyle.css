@@ -1,0 +1,55 @@
+@font-face {
+  font-family: "Formula1 Display";
+  src: local("Formula1 Display Regular")
+}
+.tablestyle {
+  font-family: "Formula1 Display";
+  src: local("Formula1 Display Regular");
+  border: 0px solid #303030;
+  background-color: #313338;
+  width: 400px;
+  text-align: center;
+  border-collapse: collapse;
+}
+.tablestyle td, table.tablestyle th {
+  border: 0px solid #6D6D6D;
+  padding: 10px 10px;
+}
+.tablestyle tbody td {
+  font-size: 12px;
+  font-weight: bold;
+  color: #ffffff;
+}
+.tablestyle tr:nth-child(even) {
+  background: #2e3035;
+}
+.tablestyle thead {
+  background: #313338;
+}
+.tablestyle thead th {
+  font-size: 15px;
+  font-weight: bold;
+  color: #ffffff;
+  text-align: center;
+  border-left: 0px solid #595959;
+}
+.tablestyle thead th:first-child {
+  border-left: none;
+}
+
+.tablestyle tfoot td {
+  font-size: 13px;
+}
+.tablestyle tfoot .links {
+  text-align: right;
+}
+.tablestyle tfoot .links a{
+  display: inline-block;
+  background: #FFFFFF;
+  color: #398AA4;
+  padding: 2px 8px;
+  border-radius: 5px;
+}
+body {
+background-color: #313338;
+}
