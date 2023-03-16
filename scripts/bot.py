@@ -622,7 +622,7 @@ async def setReminders():
                  [qualitime - timedelta(hours=12), "12 hours"],
                  [qualitime - timedelta(hours=24), "1 day"],
                  [qualitime - timedelta(hours=48), "2 days"],
-                 [qualitime - timedelta(hours=48), "4 days"],
+                 [qualitime - timedelta(hours=96), "4 days"],
                  [qualitime + timedelta(hours=22), "notdrafted"]]
     if cr > 1:
         reminders.append([fom.schedule[cr - 2] + timedelta(days=3), "windowopen"])
