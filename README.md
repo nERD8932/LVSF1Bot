@@ -35,10 +35,11 @@ A discord bot created by and for the LVS team.
 - Python 
 
 **Huge thanks to the teams and creators of the aforementioned packages, you guys rock!**
-
-
+#
 #### License
-MIT
+
+ MIT
+ 
 **Free Software, Hell Yeah!**
 #
 #### Created by [nERD]
