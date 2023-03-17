@@ -1,4 +1,4 @@
-[![Logo](https://cdn.discordapp.com/attachments/1006201726069641268/1086157444557844521/githubbanner.png)]()
+[![Logo](https://cdn.discordapp.com/attachments/1006201726069641268/1086157444557844521/githubbanner.png)](https://github.com/nERD8932/LVSF1Bot)
 # LVS F1 Fantasy League Bot
 A discord bot created by and for the LVS team.
 
