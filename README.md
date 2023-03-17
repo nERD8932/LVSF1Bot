@@ -11,7 +11,6 @@ A discord bot created by and for the LVS team.
 - Currently only supported on Windows machines
 
 #
-#
 #### Installation
 ###### Default Rules and points:
 - Extract the latest package into a suitable directory. Assuming your discord bot is already set up, create a new file called .env in the same directory as the bots exe. Open this file with a text editor of your choice, and add the entry: DISCORD_TOKEN=(discord bot token)
