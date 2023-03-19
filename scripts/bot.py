@@ -241,7 +241,8 @@ async def checkinvalidity(team, usr, cgp):
     return invalid
 
 
-@bot.tree.command(name="draft_phone", description="Android/iOS draft command; Note: (pick order: Pick1, Pick2, Pick3, Wildcard, Constructor)")
+@bot.tree.command(name="draft_phone",
+                  description="Android/iOS draft command; Note: (pick order: Pick1, Pick2, Pick3, Wildcard, Constructor)")
 async def draft_phone(interaction: discord.Interaction, picks: str):
     logging.info(
         f"{interaction.user.name} ({interaction.user.id}) triggered {interaction.command.name} at {datetime.now()}")
@@ -948,6 +949,7 @@ async def maintenance(interaction: discord.Interaction, hours: int = 2):
                                           f"till {await returnFormattedTime(to)}.",
                               color=discord.Color.red())
         await bot.get_channel(interaction.channel_id).send(embed=embed)
+        await interaction.response.send("Done!", ephemeral=True)
 
         scheduler.add_job(exit,
                           'cron',
@@ -961,7 +963,6 @@ async def maintenance(interaction: discord.Interaction, hours: int = 2):
                           name="close")
     else:
         await interaction.response.send_message("No.", ephemeral=True)
-
 
 
 ##############################################################################
