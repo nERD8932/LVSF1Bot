@@ -46,3 +46,4 @@ url-normalize==1.4.3
 urllib3==1.26.14
 websockets==10.4
 yarl==1.8.2
+jinja2==3.1.2

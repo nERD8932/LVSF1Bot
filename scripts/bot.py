@@ -1,5 +1,6 @@
 import random
 import tracemalloc
+import jinja2
 
 tracemalloc.start()
 #
@@ -80,7 +81,8 @@ help_filter = ['close',
                'deregisterchannel',
                'update',
                'sendmessage',
-               'sendembed']
+               'sendembed',
+               'maintenance']
 
 dt_format_c = "%A, %B %d,  %#I%p"
 dt_format_o = "%Y %Y-%m-%d %H:%M:%S"
@@ -631,7 +633,7 @@ async def setReminders():
         if datetime.now() < r[0]:
             scheduler.add_job(reminder,
                               'cron',
-                              year=2023,
+                              year=cyear,
                               month=r[0].month,
                               day=r[0].day,
                               hour=r[0].hour,
@@ -666,7 +668,7 @@ async def init_user(interaction):
 #
 ##############################################################################
 @bot.tree.command(name="close", description="Closes the current bot instance")
-async def close(interaction: discord.Interaction, backup: bool):
+async def close(interaction: discord.Interaction, backup: bool = False):
     logging.info(
         f"{interaction.user.name} ({interaction.user.id}) triggered {interaction.command.name} at {datetime.now()}")
     if interaction.guild is None:
@@ -810,8 +812,8 @@ async def adduservar(interaction: discord.Interaction, num: int):
 #                         await interaction.response.send_message(f'Picks registered!', ephemeral=True)
 
 
-@bot.tree.command(name="team", description="Look at your current team, and their exhaustion status")
-async def team(interaction: discord.Interaction, hidden: bool = True):
+@bot.tree.command(name="team", description="Look at your team for a given GP, and their exhaustion status")
+async def team(interaction: discord.Interaction, hidden: bool = True, gp: int = int(fom.returnCurrentRoundNum())):
     logging.info(
         f"{interaction.user.name} ({interaction.user.id}) triggered {interaction.command.name} at {datetime.now()}")
     if interaction.guild is None:
@@ -831,107 +833,135 @@ async def team(interaction: discord.Interaction, hidden: bool = True):
             #                                             ephemeral=True)
             else:
                 await interaction.response.defer(ephemeral=bool(hidden))
-                cr = fom.returnCurrentRoundNum()
-                embed = discord.Embed(title=f"{interaction.user.name}'s Team",
-                                      description='\u200b',
-                                      color=discord.Color.red())
-
-                drafted = False
-                for r in templ.table[str(interaction.user.id)][1:]:
-                    if r[1] != 'NaN':
-                        drafted = True
-
-                if not drafted:
-                    await interaction.followup.send("You haven't picked a team yet!", ephemeral=True)
+                cr = gp
+                cgp = fom.returnCurrentRoundNum()
+                if cr < 1 or cr > cgp:
+                    await interaction.followup.send("Invalid GP number")
                 else:
-                    exhausted = [False, False, False, False, False]
+                    embed = discord.Embed(title=f"{interaction.user.name}'s Team",
+                                          description='\u200b',
+                                          color=discord.Color.red())
 
-                    if templ.table[str(interaction.user.id)][cr][1] == 'NaN':
-                        embed.add_field(name='\u200b',
-                                        value="Note: You haven't set your team\n for the upcoming round; "
-                                              "showing previous rounds roster.",
-                                        inline=False)
-                        cr -= 1
-                        drs = templ.table[str(interaction.user.id)][cr]
+                    drafted = False
+                    for r in templ.table[str(interaction.user.id)][1:]:
+                        if r[1] != 'NaN':
+                            drafted = True
 
-                        qualires = fom.returnGPQuali(cr)
-                        if qualires is not None:
-                            constquali = []
-                        else:
-                            constquali = None
-                        if fom.drivers_table.results.get(str(cr)) is not None:
-                            constrace = [dr for dr in fom.drivers_table.results[str(cr)] if
-                                         fom.drivers_table.drivers[dr]['team'] == fom.drivers_table.drivers[drs[2]][
-                                             'team']]
-                        else:
-                            constrace = None
-
-                        if fom.drivers_table.results.get(str(cr)) is not None:
-                            for i in range(1, 6):
-                                if cr - 1 >= 1:
-                                    if drs[i] in templ.table[str(interaction.user.id)][cr - 1]:
-                                        exhausted[i - 1] = True
-                                if fom.drivers_table.results[str(cr)][0] == drs[i]:
-                                    exhausted[i - 1] = True
-                            if constrace is not None and constquali is not None:
-                                if constrace[0] == drs[2] or constquali[0] == drs[2]:
-                                    exhausted[1] = True
-                            else:
-                                logging.log("Quali or Race results seem to be inccomplete for /team exec.")
-                        # print(exhausted)
+                    if not drafted:
+                        await interaction.followup.send("You haven't picked a team yet!", ephemeral=True)
                     else:
-                        drs = templ.table[str(interaction.user.id)][cr]
+                        exhausted = [False, False, False, False, False]
+                        if templ.table[str(interaction.user.id)][cr][1] == 'NaN' and cr == cgp:
+                            cr -= 1
+                            embed.add_field(name='\u200b',
+                                            value="Note: You haven't set your team\n for the upcoming round; "
+                                                  "showing previous rounds roster.",
+                                            inline=False)
+                            drs = templ.table[str(interaction.user.id)][cr]
+                            qualires = fom.returnGPQuali(cr)
+                            if qualires is not None:
+                                constquali = []
+                            else:
+                                constquali = None
+                            if fom.drivers_table.results.get(str(cr)) is not None:
+                                constrace = [dr for dr in fom.drivers_table.results[str(cr)] if
+                                             fom.drivers_table.drivers[dr]['team'] == fom.drivers_table.drivers[drs[2]][
+                                                 'team']]
+                            else:
+                                constrace = None
 
-                    # for i in range(2, 6):
-                    #     if neg == 1:
-                    #         if fom.drivers_table.results[str(cr - neg)][0] == \
-                    #                 templ.table[str(interaction.user.id)][cr - neg][i]:
-                    #             exhausted[i - 1] = True
-                    #     if cr > 2:
-                    #         if templ.table[str(interaction.user.id)][cr - neg][i] in \
-                    #                 templ.table[str(interaction.user.id)][cr - neg - 1]:
-                    #             exhausted[i - 1] = True
-                    # if fom.drivers_table.results.get(str(cr - neg)) is not None:
-                    #     if list(result for result in fom.drivers_table.results[str(cr - neg)] if
-                    #             fom.drivers_table.drivers[templ.table[str(interaction.user.id)][cr - neg][1]]["team"] ==
-                    #             fom.drivers_table.drivers[result]["team"])[0] == \
-                    #             templ.table[str(interaction.user.id)][cr - neg][1]:
-                    #         exhausted[1] = True
-                    #
-                    # # else:
-                    # #     drs = fom.drivers_table.drivers[templ.table[str(interaction.user.id)][cr]]
+                            if fom.drivers_table.results.get(str(cr)) is not None:
+                                for i in range(1, 6):
+                                    if cr - 1 >= 1:
+                                        if drs[i] in templ.table[str(interaction.user.id)][cr - 1]:
+                                            exhausted[i - 1] = True
+                                    if fom.drivers_table.results[str(cr)][0] == drs[i]:
+                                        exhausted[i - 1] = True
+                                if constrace is not None and constquali is not None:
+                                    if constrace[0] == drs[2] or constquali[0] == drs[2]:
+                                        exhausted[1] = True
+                                else:
+                                    logging.log("Quali or Race results seem to be inccomplete for /team exec.")
+                            # print(exhausted)
+                        elif cr != cgp:
+                            drs = templ.table[str(interaction.user.id)][cr]
+                            if templ.table[str(interaction.user.id)][cr][1] == 'NaN':
+                                embed.add_field(name='\u200b',
+                                                value="Note: You haven't set your team\n for the upcoming round; "
+                                                      "showing previous rounds roster.",
+                                                inline=False)
+                            else:
+                                qualires = fom.returnGPQuali(cr)
+                                if qualires is not None:
+                                    constquali = []
+                                else:
+                                    constquali = None
+                                if fom.drivers_table.results.get(str(cr)) is not None:
+                                    constrace = [dr for dr in fom.drivers_table.results[str(cr)] if
+                                                 fom.drivers_table.drivers[dr]['team'] ==
+                                                 fom.drivers_table.drivers[drs[2]][
+                                                     'team']]
+                                else:
+                                    constrace = None
 
-                    embed.add_field(name='Top-3\n',
-                                    value=f'{str(fom.drivers_table.drivers[drs[3]]["full_name"] + " ⠀") if not exhausted[2] else str(fom.drivers_table.drivers[drs[3]]["full_name"] + "  🔻")}\n '
-                                          f'{str(fom.drivers_table.drivers[drs[4]]["full_name"] + " ⠀󠀠") if not exhausted[3] else str(fom.drivers_table.drivers[drs[4]]["full_name"] + "  🔻")}\n '
-                                          f'{str(fom.drivers_table.drivers[drs[5]]["full_name"] + " ⠀") if not exhausted[4] else str(fom.drivers_table.drivers[drs[5]]["full_name"] + "  🔻")}',
-                                    inline=True)
+                                if fom.drivers_table.results.get(str(cr)) is not None:
+                                    for i in range(1, 6):
+                                        if cr - 1 >= 1:
+                                            if drs[i] in templ.table[str(interaction.user.id)][cr - 1]:
+                                                exhausted[i - 1] = True
+                                        if fom.drivers_table.results[str(cr)][0] == drs[i]:
+                                            exhausted[i - 1] = True
+                                    if constrace is not None and constquali is not None:
+                                        if constrace[0] == drs[2] or constquali[0] == drs[2]:
+                                            exhausted[1] = True
+                                    else:
+                                        logging.log("Quali or Race results seem to be inccomplete for /team exec.")
+                        else:
+                            drs = templ.table[str(interaction.user.id)][cr]
+                        if drs[1] != 'NaN':
+                            embed.add_field(name='Top-3\n',
+                                            value=f'{str(fom.drivers_table.drivers[drs[3]]["full_name"] + " ⠀") if not exhausted[2] else str(fom.drivers_table.drivers[drs[3]]["full_name"] + "  🔻")}\n '
+                                                  f'{str(fom.drivers_table.drivers[drs[4]]["full_name"] + " ⠀󠀠") if not exhausted[3] else str(fom.drivers_table.drivers[drs[4]]["full_name"] + "  🔻")}\n '
+                                                  f'{str(fom.drivers_table.drivers[drs[5]]["full_name"] + " ⠀") if not exhausted[4] else str(fom.drivers_table.drivers[drs[5]]["full_name"] + "  🔻")}',
+                                            inline=True)
 
-                    embed.add_field(name='Wildcard\n',
-                                    value=f'{str(fom.drivers_table.drivers[drs[2]]["full_name"] + " ⠀") if not exhausted[1] else str(fom.drivers_table.drivers[drs[2]]["full_name"] + "  🔻")}',
-                                    inline=True)
+                            embed.add_field(name='Wildcard\n',
+                                            value=f'{str(fom.drivers_table.drivers[drs[2]]["full_name"] + " ⠀") if not exhausted[1] else str(fom.drivers_table.drivers[drs[2]]["full_name"] + "  🔻")}',
+                                            inline=True)
 
-                    embed.add_field(name='Constructor\n',
-                                    value=f'{str(drs[1] + " ⠀󠀠") if not exhausted[0] else str(drs[1] + "  🔻")}',
-                                    inline=True)
-                    embed.set_thumbnail(url=interaction.user.avatar.url)
+                            embed.add_field(name='Constructor\n',
+                                            value=f'{str(drs[1] + " ⠀󠀠") if not exhausted[0] else str(drs[1] + "  🔻")}',
+                                            inline=True)
+                            embed.set_thumbnail(url=interaction.user.avatar.url)
 
-                    # for d in templ.table[str(interaction.user.id)][cr][2:]:
-                    #     if d in templ.table[str(interaction.user.id)][cr - 1][1] and \
-                    #             d in templ.table[str(interaction.user.id)][cr - 2][1]:
-                    #         embed.add_field(name=fom.drivers_table.drivers[d]["full_name"],
-                    #                         value='Exhausted',
-                    #                         inline=False)
-                    #     elif d in templ.table[str(interaction.user.id)][cr - 1][1]:
-                    #         embed.add_field(name=fom.drivers_table.drivers[d]["full_name"],
-                    #                         value='One race away from exhaustion',
-                    #                         inline=False)
-                    #     else:
-                    #         embed.add_field(name=fom.drivers_table.drivers[d]['full_name'],
-                    #                         value='Unexhausted',
-                    #                         inline=False)
+                        await interaction.followup.send(embed=embed, ephemeral=bool(hidden))
 
-                    await interaction.followup.send(embed=embed, ephemeral=bool(hidden))
+
+@bot.tree.command(name="maintenance", description="Perform server maintenance")
+async def maintenance(interaction: discord.Interaction, hours: int = 2):
+    logging.info(
+        f"{interaction.user.name} ({interaction.user.id}) triggered {interaction.command.name} at {datetime.now()}")
+    if await bot.is_owner(interaction.user):
+        to = datetime.now() + timedelta(hours=hours)
+        embed = discord.Embed(title="Maintenance Alert!",
+                              description=f"The league bot will go down after 10 minutes for maintainance and updating "
+                                          f"till {await returnFormattedTime(to)}.",
+                              color=discord.Color.red())
+        await bot.get_channel(interaction.channel_id).send(embed=embed)
+
+        scheduler.add_job(exit,
+                          'cron',
+                          year=cyear,
+                          month=to.month,
+                          day=to.day,
+                          hour=to.hour,
+                          minute=to.minute,
+                          second=to.second,
+                          args=[0],
+                          name="close")
+    else:
+        await interaction.response.send_message("No.", ephemeral=True)
+
 
 
 ##############################################################################
