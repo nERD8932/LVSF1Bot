@@ -420,20 +420,21 @@ async def update(interaction: discord.Interaction, txtresult: str = "parse", txt
                  podiums: bool = True):
     logging.info(
         f"{interaction.user.name} ({interaction.user.id}) triggered {interaction.command.name} at {datetime.now()}")
+    await interaction.response.defer()
     if interaction.guild is None:
-        await interaction.response.send_message("Please perform this command on a server with an active league!")
+        await interaction.followup.send("Please perform this command on a server with an active league!")
     else:
         if active_leagues.get(str(interaction.guild.id)) is None:
             logging.info(f'Invalid exec error by {interaction.user} in {interaction.guild.name}.')
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 "**There is no active league started on this server!** To start one, "
                 "ask an admin to use the **/startleague** command")
 
         elif not await bot.is_owner(interaction.user):
             logging.info(f'Invalid exec error by {interaction.user} in {interaction.guild.name}.')
-            await interaction.response.send_message("You are not authorized to run this command.", ephemeral=True)
+            await interaction.followup.send("You are not authorized to run this command.", ephemeral=True)
         else:
-            await interaction.response.defer()
+
             pgp = fom.returnCurrentRoundNum() - 1
             embed = discord.Embed(title="[Points Breakdown]", description="", color=discord.Color.red())
             try:
@@ -463,10 +464,13 @@ async def update(interaction: discord.Interaction, txtresult: str = "parse", txt
                 # Grabbing race and quali results
                 if txtresult == "parse":
                     prr = fom.returnRaceResults(pgp)
-                    prq = fom.returnGPQuali(pgp)
                 else:
                     prr = txtresult.split(" ")
-                    prq = txtquali.split(" ")
+                if txtquali == "parse":
+                    prq = fom.returnGPQuali(pgp)
+                else:
+                    prq = txtresult.split(" ")
+
 
                 # prr = ["LEC", "VER", "HAM", "PER", "RUS", "NOR", "ALO", "OCO", "GAS", "ZHO"]
                 # prq = ["LEC", "VER", "HAM", "PER", "RUS", "NOR", "ALO", "OCO", "GAS", "ZHO"]
@@ -489,6 +493,8 @@ async def update(interaction: discord.Interaction, txtresult: str = "parse", txt
                 if prr is not None and prq is not None:
                     if fom.drivers_table.results.get(str(pgp)) is None:
                         fom.drivers_table.results[str(pgp)] = prr
+                    if fom.drivers_table.quali_results.get(str(pgp)) is None:
+                        fom.drivers_table.quali_results[str(pgp)] = prq
 
                     breakdown = {}
 
@@ -817,23 +823,23 @@ async def adduservar(interaction: discord.Interaction, num: int):
 async def team(interaction: discord.Interaction, hidden: bool = True, gp: int = int(fom.returnCurrentRoundNum())):
     logging.info(
         f"{interaction.user.name} ({interaction.user.id}) triggered {interaction.command.name} at {datetime.now()}")
+    await interaction.response.defer(ephemeral=bool(hidden))
     if interaction.guild is None:
         await interaction.followup.send("Please perform this command on a server with an active league!")
     else:
         templ = active_leagues.get(str(interaction.guild.id))
         if templ is None:
-            await interaction.response.send_message("No active league exists on this server! "
-                                                    "Use /startleage first.", ephemeral=True)
+            await interaction.followup.send("No active league exists on this server! "
+                                            "Use /startleage first.", ephemeral=True)
         else:
             if templ.table.get(str(interaction.user.id)) is None:
-                await interaction.response.send_message(
+                await interaction.followup.send(
                     "You have not registered for the league yet; use /register first.",
                     ephemeral=True)
             # elif templ.table[str(interaction.user.id)][1][0] == 'NaN':
             #     await interaction.response.send_message("You have not registered for the league yet; use /register first.",
             #                                             ephemeral=True)
             else:
-                await interaction.response.defer(ephemeral=bool(hidden))
                 cr = gp
                 cgp = fom.returnCurrentRoundNum()
                 if cr < 1 or cr > cgp:
@@ -860,18 +866,19 @@ async def team(interaction: discord.Interaction, hidden: bool = True, gp: int = 
                                             inline=False)
                             drs = templ.table[str(interaction.user.id)][cr]
                             qualires = fom.returnGPQuali(cr)
+
                             if qualires is not None:
-                                constquali = []
+                                constquali = [dr for dr in qualires if fom.drivers_table.drivers[dr]['team'] == fom.drivers_table.drivers[drs[2]]['team']]
                             else:
                                 constquali = None
-                            if fom.drivers_table.results.get(str(cr)) is not None:
-                                constrace = [dr for dr in fom.drivers_table.results[str(cr)] if
-                                             fom.drivers_table.drivers[dr]['team'] == fom.drivers_table.drivers[drs[2]][
-                                                 'team']]
+
+                            raceres = fom.returnRaceResults(cr)
+                            if raceres is not None:
+                                constrace = [dr for dr in raceres if fom.drivers_table.drivers[dr]['team'] == fom.drivers_table.drivers[drs[2]]['team']]
                             else:
                                 constrace = None
 
-                            if fom.drivers_table.results.get(str(cr)) is not None:
+                            if raceres is not None:
                                 for i in range(1, 6):
                                     if cr - 1 >= 1:
                                         if drs[i] in templ.table[str(interaction.user.id)][cr - 1]:
@@ -949,7 +956,7 @@ async def maintenance(interaction: discord.Interaction, hours: int = 2):
                                           f"till {await returnFormattedTime(to)}.",
                               color=discord.Color.red())
         await bot.get_channel(interaction.channel_id).send(embed=embed)
-        await interaction.response.send("Done!", ephemeral=True)
+        await interaction.response.send_message("Done!", ephemeral=True)
 
         scheduler.add_job(exit,
                           'cron',

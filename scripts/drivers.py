@@ -56,6 +56,7 @@ class drivers_table:
     def __init__(self):
         self.drivers = {}
         self.results = {}
+        self.quali_results = {}
         self.teamcolors = {}
         if os.path.exists('drivers/drivers.json'):
             self.loadDriverTable()
@@ -121,6 +122,7 @@ class drivers_table:
         temp = json.load(open(f'drivers/drivers.json', 'r'))
         self.drivers = temp['drivers']
         self.results = temp['results']
+        self.quali_results = temp['quali_results']
         # print(self.results)
         self.teamcolors = temp['teamcolors']
 

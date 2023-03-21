@@ -91,7 +91,7 @@ def returnEvent(identifier):
     sen = se.iat[5]
     sety = se.iat[6]
 
-    if ser < returnCurrentRoundNum():
+    if ser < returnCurrentRoundNum() and drivers_table.results.get(str(ser)) is not None:
         return {'round': ser,
                 'loc': sel,
                 'date': sed,
@@ -114,29 +114,37 @@ def returnRoundsInYear(year=datetime.now().year):
 
 
 def returnGPQuali(pgp):
-    if returnEvent(pgp)["type"] == "sprint":
-        keyword = "sprint"
+    if drivers_table.quali_results.get(str(pgp)) is not None:
+        return drivers_table.quali_results.get(str(pgp))
     else:
-        keyword = "qualifying"
+        if returnEvent(pgp)["type"] == "sprint":
+            keyword = "sprint"
+        else:
+            keyword = "qualifying"
 
-    url = f"https://ergast.com/api/f1/{datetime.now().year}/{pgp}/{keyword}.json"
-    response = requests.get(url)
-    data = response.json()["MRData"]["RaceTable"]["Races"]
-    if len(data) == 0:
-        return None
-    else:
-        return [dr["Driver"]["code"] for dr in data[0]["QualifyingResults"]]
-        # return ["LEC", "VER", "HAM", "PER", "RUS", "NOR", "ALO", "OCO", "GAS", "ZHO"]
+        url = f"https://ergast.com/api/f1/{datetime.now().year}/{pgp}/{keyword}.json"
+        response = requests.get(url)
+        data = response.json()["MRData"]["RaceTable"]["Races"]
+        if len(data) == 0:
+            return None
+        else:
+            drivers_table.quali_results[str(pgp)] = [dr["Driver"]["code"] for dr in data[0]["QualifyingResults"]]
+            return drivers_table.quali_results[str(pgp)]
+            # return ["LEC", "VER", "HAM", "PER", "RUS", "NOR", "ALO", "OCO", "GAS", "ZHO"]
 
 
 def returnRaceResults(r):
-    url = f"https://ergast.com/api/f1/{datetime.now().year}/{r}/results.json"
-    response = requests.get(url)
-    data = response.json()["MRData"]["RaceTable"]["Races"]
-    if len(data) == 0:
-        return None
+    if drivers_table.results.get(str(r)) is not None:
+        return drivers_table.results.get(str(r))
     else:
-        return [dr["Driver"]["code"] for dr in data[0]["Results"]]
+        url = f"https://ergast.com/api/f1/{datetime.now().year}/{r}/results.json"
+        response = requests.get(url)
+        data = response.json()["MRData"]["RaceTable"]["Races"]
+        if len(data) == 0:
+            return None
+        else:
+            drivers_table.results[str(r)] = [dr["Driver"]["code"] for dr in data[0]["Results"]]
+            return drivers_table.results[str(r)]
 
 
 def verifyTeam(t):
