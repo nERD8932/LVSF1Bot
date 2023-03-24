@@ -401,17 +401,17 @@ async def sendmessage(interaction: discord.Interaction, message: str):
 
 
 @bot.tree.command(name="sendembed", description="Send Embed")
-async def sendembed(interaction: discord.Interaction, title: str, message: str):
+async def sendembed(interaction: discord.Interaction, em_title: str, em_message: str, text: str):
     logging.info(
         f"{interaction.user.name} ({interaction.user.id}) triggered {interaction.command.name} at {datetime.now()}")
     if not await bot.is_owner(interaction.user):
         logging.info(f'Invalid exec error by {interaction.user} in {interaction.guild.name}.')
         await interaction.response.send_message("You are not authorized to run this command.", ephemeral=True)
     else:
-        embed = discord.Embed(title=title,
-                              description=message,
+        embed = discord.Embed(title=em_title,
+                              description=em_message,
                               color=discord.Color.red())
-        await bot.get_channel(interaction.channel_id).send(embed=embed)
+        await bot.get_channel(interaction.channel_id).send(content=text, embed=embed)
         await interaction.response.send_message("Sent!", ephemeral=True)
 
 
