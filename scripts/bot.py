@@ -248,7 +248,7 @@ async def draft_phone(interaction: discord.Interaction, picks: str):
         f"{interaction.user.name} ({interaction.user.id}) triggered {interaction.command.name} at {datetime.now()}")
     team = picks.split(",")
     if len(team) != 5:
-        interaction.response.send_message("Invalid team length, try again.")
+        await interaction.response.send_message("Invalid team length, try again.")
     else:
         await draftbase(interaction, team[0], team[1], team[2], team[3], team[4])
 
@@ -364,7 +364,7 @@ async def draftbase(interaction: discord.Interaction, pick_1: str, pick_2: str, 
                             for dr in team:
                                 if dr in active_leagues[str(interaction.guild.id)].table[str(interaction.user.id)][
                                     cgp - 1] and \
-                                        active_leagues[str(interaction.guild.id)].table[str(interaction.user.id)][
+                                        dr in active_leagues[str(interaction.guild.id)].table[str(interaction.user.id)][
                                             cgp - 2]:
                                     invalid = True
                                     await interaction.followup.send(
@@ -901,7 +901,9 @@ async def team(interaction: discord.Interaction, hidden: bool = True, gp: int = 
                             else:
                                 qualires = fom.returnGPQuali(cr)
                                 if qualires is not None:
-                                    constquali = []
+                                    constquali = [dr for dr in qualires if
+                                                 fom.drivers_table.drivers[dr]['team'] ==
+                                                 fom.drivers_table.drivers[drs[2]]['team']]
                                 else:
                                     constquali = None
                                 if fom.drivers_table.results.get(str(cr)) is not None:
