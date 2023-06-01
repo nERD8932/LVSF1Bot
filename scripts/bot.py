@@ -1,6 +1,5 @@
 import random
 import tracemalloc
-import jinja2
 
 tracemalloc.start()
 #
@@ -17,8 +16,28 @@ import pandas as pd
 from dotenv import load_dotenv
 import dbv2 as db
 import imgkit
+import io
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import itertools
+from matplotlib import pyplot as plt
+from matplotlib import font_manager as font_manager
+
+font_dirs = [f'{os.getcwd()}\\table\\']
+font_files = font_manager.findSystemFonts(fontpaths=font_dirs)
+for font in font_files:
+    font_manager.fontManager.addfont(font)
+# print(font_manager.get_font_names())
+
+params = {"ytick.color": "w",
+          "xtick.color": "w",
+          "axes.labelcolor": "w",
+          "axes.edgecolor": "w",
+          "font.family": "Formula1"}
+
+colors = ['red', 'pink', 'orange', 'gold', 'paleturquoise', 'lightgreen', 'royalblue', 'slateblue', 'palevioletred']
+
+plt.rcParams.update(params)
+plt.switch_backend('Agg')
 
 imgk_config = imgkit.config(wkhtmltoimage='wkhtmltopdf/bin/wkhtmltoimage.exe')
 
@@ -70,7 +89,7 @@ intents.guild_scheduled_events = True
 ##############################################################################
 active_leagues = {}
 lfd = str(os.getcwd() + '/guildLeagues/')
-bot = commands.Bot(command_prefix='?', intents=intents, help_command=None)
+bot = commands.AutoShardedBot(command_prefix='?', intents=intents, help_command=None)
 fsel = 5
 
 help_filter = ['close',
@@ -81,8 +100,11 @@ help_filter = ['close',
                'deregisterchannel',
                'update',
                'sendmessage',
+               'sendimage',
                'sendembed',
-               'maintenance']
+               'maintenance',
+               'react',
+               'editmessage']
 
 dt_format_c = "%A, %B %d,  %#I%p"
 dt_format_o = "%Y %Y-%m-%d %H:%M:%S"
@@ -93,6 +115,7 @@ points_seq = [22, 18, 15, 12, 10, 8, 6, 4, 2, 1]
 wildcard_qp = 2
 wildcard_rp = 3
 construct_points = [5, 4, 3, 2, 1]
+maxpts = 65
 
 # print(points_seq)
 
@@ -211,12 +234,12 @@ async def checkinvalidity(team, usr, cgp):
         if cgp > 1:
             # print(str(cgp - 1))
             qualires = fom.returnGPQuali(cgp - 1)
-
-            if fom.drivers_table.results.get(str(cgp - 1)) is not None and qualires is not None:
+            raceres = fom.returnRaceResults(cgp - 1)
+            if raceres is not None and qualires is not None:
                 constquali = [result for result in qualires if
                               fom.drivers_table.drivers[usr[cgp - 1][2]]["team"] == fom.drivers_table.drivers[result][
                                   "team"]]
-                constrace = [result for result in fom.drivers_table.results[str(cgp - 1)] if
+                constrace = [result for result in raceres if
                              fom.drivers_table.drivers[usr[cgp - 1][2]]["team"] == fom.drivers_table.drivers[result][
                                  "team"]]
                 if fom.drivers_table.results[str(cgp - 1)][0] in usr[cgp - 1] and \
@@ -231,7 +254,10 @@ async def checkinvalidity(team, usr, cgp):
                     for dr in team:
                         if dr in usr[cgp - 1] and usr[cgp - 2]:
                             invalid = True
+                        if dr == raceres[0]:
+                            invalid = True
                         break
+
             else:
                 logging.info("Quali or race result not found for invalidity check")
 
@@ -245,10 +271,10 @@ async def checkinvalidity(team, usr, cgp):
                   description="Android/iOS draft command; Note: (pick order: Pick1, Pick2, Pick3, Wildcard, Constructor)")
 async def draft_phone(interaction: discord.Interaction, picks: str):
     logging.info(
-        f"{interaction.user.name} ({interaction.user.id}) triggered {interaction.command.name} at {datetime.now()}")
+        f"{interaction.user.name} ({interaction.user.id}) triggered {interaction.command.name} at {datetime.now()} with args: picks = {picks}")
     team = picks.split(",")
     if len(team) != 5:
-        await interaction.response.send_message("Invalid team length, try again.")
+        await interaction.response.send_message("Invalid team length, try again.", ephemeral=True)
     else:
         await draftbase(interaction, team[0], team[1], team[2], team[3], team[4])
 
@@ -257,8 +283,68 @@ async def draft_phone(interaction: discord.Interaction, picks: str):
 async def draft(interaction: discord.Interaction, pick_1: str, pick_2: str, pick_3: str, wildcard: str,
                 constructor: str):
     logging.info(
-        f"{interaction.user.name} ({interaction.user.id}) triggered {interaction.command.name} at {datetime.now()}")
+        f"{interaction.user.name} ({interaction.user.id}) triggered {interaction.command.name} at {datetime.now()} with args: picks = {[pick_1, pick_2, pick_3, wildcard, constructor]}")
     await draftbase(interaction, pick_1, pick_2, pick_3, wildcard, constructor)
+
+
+@bot.tree.command(name="checkexhausted", description="Check what drivers are exhausted for you.")
+async def checkex(interaction: discord.Interaction, hidden: bool = True):
+    logging.info(
+        f"{interaction.user.name} ({interaction.user.id}) triggered {interaction.command.name} at {datetime.now()} with args: hidden = {hidden}")
+    if interaction.guild is None:
+        await interaction.response.send_message("Please perform this command on a server with an active league!")
+    else:
+        cgp = fom.returnCurrentRoundNum()
+        if active_leagues.get(str(interaction.guild.id)) is None:
+            logging.info(f'Invalid exec error by {interaction.user} in {interaction.guild.name}.')
+            await interaction.response.send_message(
+                "**There is no active league started on this server!** To start one, "
+                "ask an admin to use the **/startleague** command", ephemeral=True)
+        elif active_leagues.get(str(interaction.guild.id)).table.get(str(interaction.user.id)) is None:
+            await interaction.response.send_message(
+                "**You have not yet registered for the league!**, use /register first",
+                ephemeral=True)
+        # elif active_leagues[str(interaction.guild.id)].table[str(interaction.user.id)][1][2] != 'NaN':
+        #     print('NotNaN')
+        #     await interaction.response.send_message("**You've already selected your team!!**", ephemeral=True)
+        elif cgp == 1:
+            await interaction.response.send_message(
+                "This is the first round, there are no exhausted drivers yet, dumbass!",
+                ephemeral=True)
+        else:
+            await interaction.response.defer(ephemeral=hidden)
+
+            team1 = active_leagues[str(interaction.guild_id)].table[str(interaction.user.id)][cgp - 1][1:]
+            if cgp - 2 >= 1:
+                team2 = active_leagues[str(interaction.guild_id)].table[str(interaction.user.id)][cgp - 2][1:]
+            else:
+                team2 = []
+
+            qualiresults = fom.returnGPQuali(cgp - 1)
+            raceresults = fom.returnRaceResults(cgp - 1)
+            drembed = discord.Embed(title="Exhausted Drivers", description=" ", color=discord.Color.red())
+            raceconst = list(result for result in raceresults if
+                             fom.drivers_table.drivers[team1[1]]["team"] == fom.drivers_table.drivers[result]["team"])
+            qualiconst = list(result for result in qualiresults if fom.drivers_table.drivers[
+                team1[1]]["team"] == fom.drivers_table.drivers[result]["team"])
+            exh = []
+            for dr in fom.drivers_table.drivers:
+                exh.append(False)
+                # logging.info(dr + ": ")
+                if dr in team1 and dr in team2:
+                    # logging.info("2 times picked")
+                    exh[-1] = True
+                if dr == raceresults[0]:
+                    # logging.info("race winner")
+                    exh[-1] = True
+                if dr == team1[1]:
+                    if len(raceconst) > 0 and len(qualiconst) > 0:
+                        if team1[1] == raceconst[0] or team1[1] == qualiconst[0]:
+                            # logging.info("wildcard")
+                            exh[-1] = True
+                if exh[-1]:
+                    drembed.add_field(name=fom.drivers_table.drivers[dr]["full_name"], inline=False, value="🔻Exhausted")
+            await interaction.followup.send(embed=drembed)
 
 
 async def draftbase(interaction: discord.Interaction, pick_1: str, pick_2: str, pick_3: str, wildcard: str,
@@ -283,14 +369,12 @@ async def draftbase(interaction: discord.Interaction, pick_1: str, pick_2: str, 
 
             cgp = fom.returnCurrentRoundNum()
 
-            if cgp > 1:
-                qualiresults = fom.returnGPQuali(cgp - 1)
-            else:
-                qualiresults = None
+            qualiresults = fom.returnGPQuali(cgp - 1) if cgp > 1 else None
 
             # print(cgp)
             if cgp > 1 and fom.schedule[cgp - 2] < datetime.now() < (fom.schedule[cgp - 2] + timedelta(days=3)):
                 ne = fom.returnNextEvent()
+                logging.info(fom.schedule[cgp - 2] + timedelta(days=3))
                 window = fom.schedule[cgp - 2] + timedelta(days=3)
                 await interaction.followup.send(f"The pick window is currently closed; it will re-open on "
                                                 f"{await returnFormattedTime(window)}"
@@ -344,28 +428,31 @@ async def draftbase(interaction: discord.Interaction, pick_1: str, pick_2: str, 
                                 ephemeral=True)
 
                         elif len(raceconst) > 0:
-                            if raceconst[0] == team[1]:
+                            if raceconst[0] in team:
                                 invalid = True
-                                await interaction.response.send_message(
-                                    "Your wildcard's exhausted! Pick a different driver!",
+                                await interaction.followup.send(
+                                    "One of the drivers you're trying to pick was exhausted as a wild card pick over the"
+                                    " last Race weekend. Pick someone else.",
                                     ephemeral=True)
 
                         elif qualiresults is not None:
                             qualiconst = list(result for result in qualiresults if fom.drivers_table.drivers[
                                 active_leagues[str(interaction.guild.id)].table[str(interaction.user.id)][
                                     cgp - 1][2]]["team"] == fom.drivers_table.drivers[result]["team"])
+
                             if len(qualiconst) > 0:
-                                if qualiconst[0] == team[1]:
+                                if qualiconst[0] in team:
                                     invalid = True
                                     await interaction.followup.send(
-                                        "Your wildcard's exhausted! Pick a different driver!")
+                                        "One of the drivers you're trying to pick was exhausted as a wild card pick "
+                                        "over the last Race weekend. Pick someone else.")
 
                         elif cgp > 2:
                             for dr in team:
                                 if dr in active_leagues[str(interaction.guild.id)].table[str(interaction.user.id)][
                                     cgp - 1] and \
                                         dr in active_leagues[str(interaction.guild.id)].table[str(interaction.user.id)][
-                                            cgp - 2]:
+                                    cgp - 2]:
                                     invalid = True
                                     await interaction.followup.send(
                                         "You can't pick exhausted drivers/constructors! Use /team to check what in "
@@ -388,20 +475,101 @@ async def draftbase(interaction: discord.Interaction, pick_1: str, pick_2: str, 
                         await interaction.followup.send("Picks saved!")
 
 
-@bot.tree.command(name="sendmessage", description="Send Message")
-async def sendmessage(interaction: discord.Interaction, message: str):
+@bot.tree.command(name="react", description="react")
+async def react(interaction: discord.Interaction, reply: str, reaction: str):
     logging.info(
         f"{interaction.user.name} ({interaction.user.id}) triggered {interaction.command.name} at {datetime.now()}")
     if not await bot.is_owner(interaction.user):
         logging.info(f'Invalid exec error by {interaction.user} in {interaction.guild.name}.')
         await interaction.response.send_message("You are not authorized to run this command.", ephemeral=True)
     else:
-        await bot.get_channel(interaction.channel_id).send(content=message)
-        await interaction.response.send_message("Sent!", ephemeral=True)
+        try:
+            instance = [message async for message in interaction.channel.history() if message.content == reply]
+            if len(instance) == 0:
+                await interaction.response.send_message("No reply-alble message with such content found",
+                                                        ephemeral=True)
+            else:
+                await instance[0].add_reaction(reaction)
+                await interaction.response.send_message("Done", ephemeral=True)
+        except Exception as e:
+            await interaction.response.send_message(f"{e} occured.", ephemeral=True)
+
+
+@bot.tree.command(name="editmessage", description="Edit Message")
+async def editmessage(interaction: discord.Interaction, message: str, editee: str):
+    logging.info(
+        f"{interaction.user.name} ({interaction.user.id}) triggered {interaction.command.name} at {datetime.now()}")
+    if not await bot.is_owner(interaction.user):
+        logging.info(f'Invalid exec error by {interaction.user} in {interaction.guild.name}.')
+        await interaction.response.send_message("You are not authorized to run this command.", ephemeral=True)
+    else:
+        try:
+            instance = [message async for message in interaction.channel.history() if message.content == editee]
+            if len(instance) == 0:
+                interaction.response.send_message("No reply-alble message with such content found", ephemeral=True)
+            else:
+                await instance[0].edit(content=message)
+                await interaction.response.send_message("done!", ephemeral=True)
+        except Exception as e:
+            await interaction.response.send_message(f"{e} occured.", ephemeral=True)
+
+
+@bot.tree.command(name="sendimage", description="Send Image")
+async def sendimage(interaction: discord.Interaction, message: str = "", reply: str = "",
+                    img_name: str = "send_img.png"):
+    logging.info(
+        f"{interaction.user.name} ({interaction.user.id}) triggered {interaction.command.name} at {datetime.now()}")
+    if not await bot.is_owner(interaction.user):
+        logging.info(f'Invalid exec error by {interaction.user} in {interaction.guild.name}.')
+        await interaction.response.send_message("You are not authorized to run this command.", ephemeral=True)
+    else:
+        await interaction.response.defer(ephemeral=True)
+        if len(reply) > 0:
+            try:
+                instance = [message async for message in interaction.channel.history() if message.content == reply]
+                if len(instance) == 0:
+                    interaction.followup.send("No reply-alble message with such content found", ephemeral=True)
+                else:
+                    with open(img_name, 'rb') as f:
+                        picture = discord.File(f)
+                        await instance[0].reply(file=picture, content=message)
+                    await interaction.followup.send("Sent!")
+            except Exception as e:
+                await interaction.followup.send(f"{e} occured.", ephemeral=True)
+
+        else:
+            with open(img_name, 'rb') as f:
+                picture = discord.File(f)
+                await bot.get_channel(interaction.channel_id).send(file=picture, content=message)
+            await interaction.followup.send("Sent!", ephemeral=True)
+
+
+@bot.tree.command(name="sendmessage", description="Send Message")
+async def sendmessage(interaction: discord.Interaction, message: str, reply: str = ""):
+    logging.info(
+        f"{interaction.user.name} ({interaction.user.id}) triggered {interaction.command.name} at {datetime.now()}")
+    if not await bot.is_owner(interaction.user):
+        logging.info(f'Invalid exec error by {interaction.user} in {interaction.guild.name}.')
+        await interaction.response.send_message("You are not authorized to run this command.", ephemeral=True)
+    else:
+        if len(reply) > 0:
+            try:
+                instance = [message async for message in interaction.channel.history() if message.content == reply]
+                if len(instance) == 0:
+                    interaction.response.send_message("No reply-alble message with such content found", ephemeral=True)
+                else:
+                    await instance[0].reply(message)
+                    await interaction.response.send_message("Sent!", ephemeral=True)
+            except Exception as e:
+                await interaction.response.send_message(f"{e} occured.", ephemeral=True)
+
+        else:
+            await bot.get_channel(interaction.channel_id).send(content=message)
+            await interaction.response.send_message("Sent!", ephemeral=True)
 
 
 @bot.tree.command(name="sendembed", description="Send Embed")
-async def sendembed(interaction: discord.Interaction, em_title: str, em_message: str, text: str):
+async def sendembed(interaction: discord.Interaction, em_title: str, em_message: str = "", text: str = ""):
     logging.info(
         f"{interaction.user.name} ({interaction.user.id}) triggered {interaction.command.name} at {datetime.now()}")
     if not await bot.is_owner(interaction.user):
@@ -471,7 +639,6 @@ async def update(interaction: discord.Interaction, txtresult: str = "parse", txt
                 else:
                     prq = txtresult.split(" ")
 
-
                 # prr = ["LEC", "VER", "HAM", "PER", "RUS", "NOR", "ALO", "OCO", "GAS", "ZHO"]
                 # prq = ["LEC", "VER", "HAM", "PER", "RUS", "NOR", "ALO", "OCO", "GAS", "ZHO"]
 
@@ -501,6 +668,7 @@ async def update(interaction: discord.Interaction, txtresult: str = "parse", txt
                     # just restting the member points values for this gp to 0, and adding constructor points
                     for mem in active_leagues[str(interaction.guild.id)].members:
                         active_leagues[str(interaction.guild.id)].table[mem][pgp][0] = 0
+                        breakdown[bot.get_user(int(mem)).name] = ""
 
                         # randomizing picks for people who didn't draft in time
                         if active_leagues[str(interaction.guild.id)].table[mem][pgp][1] == 'NaN':
@@ -517,8 +685,10 @@ async def update(interaction: discord.Interaction, txtresult: str = "parse", txt
                         if constructors.get(active_leagues[str(interaction.guild.id)].table[mem][pgp][1]) is not None:
                             active_leagues[str(interaction.guild.id)].table[mem][pgp][0] += constructors[
                                 active_leagues[str(interaction.guild.id)].table[mem][pgp][1]]
-                        breakdown[bot.get_user(int(mem)).name] = str(
-                            constructors[active_leagues[str(interaction.guild.id)].table[mem][pgp][1]]) + "C "
+                            breakdown[bot.get_user(int(mem)).name] = str(
+                                constructors[active_leagues[str(interaction.guild.id)].table[mem][pgp][1]]) + "C "
+                        else:
+                            breakdown[bot.get_user(int(mem)).name] = "0C "
                         # print(mem, constructors[active_leagues[str(interaction.guild.id)].table[mem][pgp][1]])
 
                     for i in range(20):
@@ -702,7 +872,7 @@ async def close(interaction: discord.Interaction, backup: bool = False):
 async def startleague(interaction: discord.Interaction, rounds: int = int(fom.returnRoundsInYear(cyear))):
     await interaction.response.defer()
     logging.info(
-        f"{interaction.user.name} ({interaction.user.id}) triggered {interaction.command.name} at {datetime.now()}")
+        f"{interaction.user.name} ({interaction.user.id}) triggered {interaction.command.name} at {datetime.now()} with args: rounds = {rounds}")
     if interaction.guild is None:
         await interaction.followup.send("Please perform this command on a server with an active league!")
     else:
@@ -820,9 +990,12 @@ async def adduservar(interaction: discord.Interaction, num: int):
 
 
 @bot.tree.command(name="team", description="Look at your team for a given GP, and their exhaustion status")
-async def team(interaction: discord.Interaction, hidden: bool = True, gp: int = int(fom.returnCurrentRoundNum())):
+async def team(interaction: discord.Interaction,
+               hidden: bool = True,
+               gp: int = int(fom.returnCurrentRoundNum()),
+               user: discord.User = None):
     logging.info(
-        f"{interaction.user.name} ({interaction.user.id}) triggered {interaction.command.name} at {datetime.now()}")
+        f"{interaction.user.name} ({interaction.user.id}) triggered {interaction.command.name} at {datetime.now()} with args: hidden = {hidden}, gp = {gp}, user = {user if user is None else user.name}")
     await interaction.response.defer(ephemeral=bool(hidden))
     if interaction.guild is None:
         await interaction.followup.send("Please perform this command on a server with an active league!")
@@ -832,78 +1005,94 @@ async def team(interaction: discord.Interaction, hidden: bool = True, gp: int = 
             await interaction.followup.send("No active league exists on this server! "
                                             "Use /startleage first.", ephemeral=True)
         else:
-            if templ.table.get(str(interaction.user.id)) is None:
+            u = interaction.user if user is None else user
+            if templ.table.get(str(u.id)) is None:
                 await interaction.followup.send(
-                    "You have not registered for the league yet; use /register first.",
+                    "The user in question has not registered for the league yet; use /register first.",
                     ephemeral=True)
-            # elif templ.table[str(interaction.user.id)][1][0] == 'NaN':
-            #     await interaction.response.send_message("You have not registered for the league yet; use /register first.",
-            #                                             ephemeral=True)
+            # elif templ.table[str(interaction.user.id)][1][0] == 'NaN': await interaction.response.send_message("You
+            # have not registered for the league yet; use /register first.", ephemeral=True)
             else:
                 cr = gp
                 cgp = fom.returnCurrentRoundNum()
                 if cr < 1 or cr > cgp:
                     await interaction.followup.send("Invalid GP number")
+                elif user is not None and cr == cgp:
+                    await interaction.followup.send(
+                        "You cannot check a users current team; that should have been obvious.")
                 else:
-                    embed = discord.Embed(title=f"{interaction.user.name}'s Team",
+                    embed = discord.Embed(title=f"{u.name}'s Team",
                                           description='\u200b',
                                           color=discord.Color.red())
 
                     drafted = False
-                    for r in templ.table[str(interaction.user.id)][1:]:
+                    for r in templ.table[str(u.id)][1:]:
                         if r[1] != 'NaN':
                             drafted = True
 
                     if not drafted:
                         await interaction.followup.send("You haven't picked a team yet!", ephemeral=True)
                     else:
+                        printteam = True
                         exhausted = [False, False, False, False, False]
-                        if templ.table[str(interaction.user.id)][cr][1] == 'NaN' and cr == cgp:
+                        if cr == cgp and templ.table[str(u.id)][cr][1] == 'NaN':
                             cr -= 1
-                            embed.add_field(name='\u200b',
-                                            value="Note: You haven't set your team\n for the upcoming round; "
-                                                  "showing previous rounds roster.",
-                                            inline=False)
-                            drs = templ.table[str(interaction.user.id)][cr]
-                            qualires = fom.returnGPQuali(cr)
-
-                            if qualires is not None:
-                                constquali = [dr for dr in qualires if fom.drivers_table.drivers[dr]['team'] == fom.drivers_table.drivers[drs[2]]['team']]
-                            else:
-                                constquali = None
-
-                            raceres = fom.returnRaceResults(cr)
-                            if raceres is not None:
-                                constrace = [dr for dr in raceres if fom.drivers_table.drivers[dr]['team'] == fom.drivers_table.drivers[drs[2]]['team']]
-                            else:
-                                constrace = None
-
-                            if raceres is not None:
-                                for i in range(1, 6):
-                                    if cr - 1 >= 1:
-                                        if drs[i] in templ.table[str(interaction.user.id)][cr - 1]:
-                                            exhausted[i - 1] = True
-                                    if fom.drivers_table.results[str(cr)][0] == drs[i]:
-                                        exhausted[i - 1] = True
-                                if constrace is not None and constquali is not None:
-                                    if constrace[0] == drs[2] or constquali[0] == drs[2]:
-                                        exhausted[1] = True
-                                else:
-                                    logging.log("Quali or Race results seem to be inccomplete for /team exec.")
-                            # print(exhausted)
-                        elif cr != cgp:
-                            drs = templ.table[str(interaction.user.id)][cr]
-                            if templ.table[str(interaction.user.id)][cr][1] == 'NaN':
+                            drs = templ.table[str(u.id)][cr]
+                            if drs[1] != 'NaN':
                                 embed.add_field(name='\u200b',
                                                 value="Note: You haven't set your team\n for the upcoming round; "
                                                       "showing previous rounds roster.",
                                                 inline=False)
+                                qualires = fom.returnGPQuali(cr)
+
+                                if qualires is not None:
+                                    constquali = [dr for dr in qualires if fom.drivers_table.drivers[dr]['team'] ==
+                                                  fom.drivers_table.drivers[drs[2]]['team']]
+                                else:
+                                    constquali = None
+
+                                raceres = fom.returnRaceResults(cr)
+                                if raceres is not None:
+                                    constrace = [dr for dr in raceres if
+                                                 fom.drivers_table.drivers[dr]['team'] ==
+                                                 fom.drivers_table.drivers[drs[2]][
+                                                     'team']]
+                                else:
+                                    constrace = None
+
+                                if raceres is not None:
+                                    for i in range(1, 6):
+                                        if cr - 1 >= 1:
+                                            if drs[i] in templ.table[str(u.id)][cr - 1]:
+                                                exhausted[i - 1] = True
+                                        if fom.drivers_table.results[str(cr)][0] == drs[i]:
+                                            exhausted[i - 1] = True
+                                    if constrace is not None and constquali is not None:
+                                        if constrace[0] == drs[2] or constquali[0] == drs[2]:
+                                            exhausted[1] = True
+                                    else:
+                                        logging.log("Quali or Race results seem to be inccomplete for /team exec.")
+                            else:
+                                embed.add_field(name='\u200b',
+                                                value="Note: Your team was not set for the previous two rounds, "
+                                                      "so there's nothing to show here :/.",
+                                                inline=False)
+                                printteam = False
+                            # print(exhausted)
+                        elif cr != cgp:
+                            drs = templ.table[str(u.id)][cr]
+                            if templ.table[str(u.id)][cr][1] == 'NaN':
+                                embed.add_field(name='\u200b',
+                                                value="Note: You hadn't set your team\n for the the mentioned round; "
+                                                      "so there's no team to show.",
+                                                inline=False)
+                                printteam = False
                             else:
                                 qualires = fom.returnGPQuali(cr)
                                 if qualires is not None:
                                     constquali = [dr for dr in qualires if
-                                                 fom.drivers_table.drivers[dr]['team'] ==
-                                                 fom.drivers_table.drivers[drs[2]]['team']]
+                                                  fom.drivers_table.drivers[dr]['team'] ==
+                                                  fom.drivers_table.drivers[drs[2]]['team']]
                                 else:
                                     constquali = None
                                 if fom.drivers_table.results.get(str(cr)) is not None:
@@ -917,7 +1106,7 @@ async def team(interaction: discord.Interaction, hidden: bool = True, gp: int = 
                                 if fom.drivers_table.results.get(str(cr)) is not None:
                                     for i in range(1, 6):
                                         if cr - 1 >= 1:
-                                            if drs[i] in templ.table[str(interaction.user.id)][cr - 1]:
+                                            if drs[i] in templ.table[str(u.id)][cr - 1]:
                                                 exhausted[i - 1] = True
                                         if fom.drivers_table.results[str(cr)][0] == drs[i]:
                                             exhausted[i - 1] = True
@@ -927,8 +1116,9 @@ async def team(interaction: discord.Interaction, hidden: bool = True, gp: int = 
                                     else:
                                         logging.log("Quali or Race results seem to be inccomplete for /team exec.")
                         else:
-                            drs = templ.table[str(interaction.user.id)][cr]
-                        if drs[1] != 'NaN':
+                            drs = templ.table[str(u.id)][cr]
+
+                        if printteam:
                             embed.add_field(name='Top-3\n',
                                             value=f'{str(fom.drivers_table.drivers[drs[3]]["full_name"] + " ⠀") if not exhausted[2] else str(fom.drivers_table.drivers[drs[3]]["full_name"] + "  🔻")}\n '
                                                   f'{str(fom.drivers_table.drivers[drs[4]]["full_name"] + " ⠀󠀠") if not exhausted[3] else str(fom.drivers_table.drivers[drs[4]]["full_name"] + "  🔻")}\n '
@@ -942,7 +1132,7 @@ async def team(interaction: discord.Interaction, hidden: bool = True, gp: int = 
                             embed.add_field(name='Constructor\n',
                                             value=f'{str(drs[1] + " ⠀󠀠") if not exhausted[0] else str(drs[1] + "  🔻")}',
                                             inline=True)
-                            embed.set_thumbnail(url=interaction.user.avatar.url)
+                            embed.set_thumbnail(url=u.avatar.url)
 
                         await interaction.followup.send(embed=embed, ephemeral=bool(hidden))
 
@@ -950,7 +1140,7 @@ async def team(interaction: discord.Interaction, hidden: bool = True, gp: int = 
 @bot.tree.command(name="maintenance", description="Perform server maintenance")
 async def maintenance(interaction: discord.Interaction, hours: int = 2):
     logging.info(
-        f"{interaction.user.name} ({interaction.user.id}) triggered {interaction.command.name} at {datetime.now()}")
+        f"{interaction.user.name} ({interaction.user.id}) triggered {interaction.command.name} at {datetime.now()} with args: hours = {hours}")
     if await bot.is_owner(interaction.user):
         to = datetime.now() + timedelta(hours=hours)
         embed = discord.Embed(title="Maintenance Alert!",
@@ -1153,7 +1343,7 @@ async def leaderboard(interaction: discord.Interaction):
 async def seasonevent(interaction: discord.Interaction, gp: str):
     await interaction.response.defer()
     logging.info(
-        f"{interaction.user.name} ({interaction.user.id}) triggered {interaction.command.name} at {datetime.now()}")
+        f"{interaction.user.name} ({interaction.user.id}) triggered {interaction.command.name} at {datetime.now()} with args: gp = {gp}")
     if gp.isnumeric():
         gp = int(gp)
     try:
@@ -1247,7 +1437,7 @@ async def returnTrackLink(track_loc, track_name):
 async def driver(interaction: discord.Interaction, identifier: str):
     await interaction.response.defer()
     logging.info(
-        f"{interaction.user.name} ({interaction.user.id}) triggered {interaction.command.name} at {datetime.now()}")
+        f"{interaction.user.name} ({interaction.user.id}) triggered {interaction.command.name} at {datetime.now()} with args: identifier = {identifier}")
     if fom.drivers_table.returnDriverTLA(identifier) == 'NaN':
         await interaction.followup.send("No driver found with identification you specified!")
     else:
@@ -1267,6 +1457,196 @@ async def driver(interaction: discord.Interaction, identifier: str):
         await interaction.followup.send(embed=embed)
 
 
+def savePlot(x, y, lables):
+    fig, ax = plt.subplots()
+    fig.set_figwidth(10)
+    for i, _ in enumerate(y):
+        ax.plot(x, _, color=colors[i] if i < len(colors) else (random.random(), random.random(), random.random()),
+                marker='o', markerfacecolor='white', label=lables[i])
+
+    ax.set_xlim(0, len(fom.schedule) + 1)
+    ax.set_xticks(range(0, len(fom.schedule) + 1, 1))
+
+    ax.set_ylim(0, maxpts + 5)
+    ax.set_yticks(range(0, maxpts + 5, 5))
+
+    ax.grid(True, alpha=0.66)
+    ax.set_facecolor((0.17, 0.18, 0.19))
+    fig.set_facecolor((0.17, 0.18, 0.19))
+    ax.legend(lables,
+              fontsize='x-small',
+              facecolor='black',
+              framealpha=0.5,
+              labelcolor='white',
+              borderpad=0.3,
+              edgecolor='black',
+              ncols=2)
+
+    if len(y) == 2:
+        for i, v in enumerate(y[0]):
+            ax.text(i + 1, y[1][i] + 3, "%d" % y[1][i], ha="center", color='lightgrey',
+                    backgroundcolor=(0.17, 0.18, 0.19, 0.75),
+                    fontsize='small')
+            ax.text(i + 1, v + 3, "%d" % v, ha="center", color='white', backgroundcolor=(0.17, 0.18, 0.19, 0.75),
+                    fontsize='small')
+
+    elif len(y) == 1:
+        for i, v in enumerate(y[0]):
+            ax.text(i + 1, v + 3, "%d" % v, ha="center", color='white', backgroundcolor=(0.17, 0.18, 0.19, 0.75),
+                    fontsize='small')
+
+    buf = io.BytesIO()
+    plt.savefig(buf, bbox_inches='tight')
+    buf.seek(0)
+    plt.clf()
+    plt.close('all')
+    return buf
+
+
+@bot.tree.command(name="setmotto", description="Set your team motto (Overly offensive mottos = docked points or ban)")
+async def set_motto(interaction: discord.Interaction, motto: str):
+    logging.info(
+        f"{interaction.user.name} ({interaction.user.id}) triggered {interaction.command.name} at {datetime.now()} with args: motto = {motto}")
+    if interaction.guild is None:
+        await interaction.response.send_message("Please perform this command on a server with an active league!")
+    else:
+        await interaction.response.defer(ephemeral=True)
+        if active_leagues.get(str(interaction.guild.id)) is not None:
+            if active_leagues[str(interaction.guild.id)].members.get(str(interaction.user.id)) is None:
+                await interaction.followup.send('You must be registered in the league to unlock this funcionality!')
+            else:
+                active_leagues[str(interaction.guild.id)].mottos[str(interaction.user.id)] = str(motto)
+                await interaction.followup.send('Done! Use /profile to check your changed motto!')
+        else:
+            await interaction.followup.send('The server does not have any active leagues.')
+
+
+@bot.tree.command(name="compare", description="Compare points distribution for two users")
+async def compare(interaction: discord.Interaction, user1: discord.User, user2: discord.User):
+    logging.info(
+        f"{interaction.user.name} ({interaction.user.id}) triggered {interaction.command.name} at {datetime.now()} with args: user1 = {user1.name}, user2 = {user2.name}")
+    if interaction.guild is None:
+        await interaction.response.send_message("Please perform this command on a server with an active league!")
+    elif user1.id == user2.id:
+        await interaction.response.send_message("I see what you did there you cheeky lil' shit...")
+    else:
+        await interaction.response.defer()
+        embed = discord.Embed(
+            title=f'Comparison',
+            description=f"{user1.name} & {user2.name}",
+            color=discord.Color.red())
+        pfile = None
+        if active_leagues.get(str(interaction.guild.id)) is not None:
+            temp_league_check: db.Table = active_leagues[str(interaction.guild.id)]
+            if temp_league_check.members.get(
+                    str(user1.id)) is not None and temp_league_check.members.get(str(user2.id)) is not None:
+
+                x = range(1, fom.returnCurrentRoundNum())
+                y = [[temp_league_check.table[str(user1.id)][x][0] for x in range(1, fom.returnCurrentRoundNum())],
+                     [temp_league_check.table[str(user2.id)][x][0] for x in range(1, fom.returnCurrentRoundNum())]]
+
+                buf = savePlot(x, y, [user1.name, user2.name])
+                cr = fom.returnCurrentRoundNum()
+                avgptsd = round(
+                    temp_league_check.members[str(user1.id)] / cr - temp_league_check.members[str(user2.id)] / cr, 2)
+                embed.add_field(name=f"{user1.name} League Rank ",
+                                value=f'#{temp_league_check.returnUserRank(str(user1.id))}',
+                                inline=True)
+
+                embed.add_field(name=f"{user2.name} League Rank ",
+                                value=f'#{temp_league_check.returnUserRank(str(user2.id))}',
+                                inline=True)
+
+                embed.add_field(name=f" Points Delta ",
+                                value=f'{abs(temp_league_check.members[str(user1.id)] - temp_league_check.members[str(user2.id)])}',
+                                inline=True)
+
+                embed.add_field(name=f" {user1.name} Current Points ",
+                                value=f'{temp_league_check.members[str(user1.id)]}',
+                                inline=True)
+
+                embed.add_field(name=f" {user2.name} Current Points ",
+                                value=f'{temp_league_check.members[str(user2.id)]}',
+                                inline=True)
+
+                embed.add_field(name=f" Avg. Points Delta ",
+                                value=f'{abs(avgptsd)} higher for {user1.name}' if avgptsd > 0 else f'{abs(avgptsd)} higher for {user2.name}',
+                                inline=True)
+
+                pfile = discord.File(buf, filename='temp.png')
+                buf.close()
+                embed.set_image(url="attachment://temp.png")
+
+            else:
+                embed.add_field(name="Comparison", value="One or more of the people you're comparing is not "
+                                                         "participating in current league.",
+                                inline=False)
+
+        else:
+            embed.set_footer(text=' The server does not have any active leagues.')
+        if pfile is not None:
+            await interaction.followup.send(embed=embed, file=pfile)
+            pfile.close()
+        else:
+            await interaction.followup.send(embed=embed)
+
+
+@bot.tree.command(name="compareall", description="Compare points distribution for all league members")
+async def compareall(interaction: discord.Interaction):
+    logging.info(
+        f"{interaction.user.name} ({interaction.user.id}) triggered {interaction.command.name} at {datetime.now()}")
+    if interaction.guild is None:
+        await interaction.response.send_message("Please perform this command on a server with an active league!")
+    else:
+        await interaction.response.defer()
+        embed = discord.Embed(
+            title='League Points Comparison',
+            description=" ",
+            color=discord.Color.red())
+        pfile = None
+        if active_leagues.get(str(interaction.guild.id)) is not None:
+            temp_league_check: db.Table = active_leagues[str(interaction.guild.id)]
+            x = range(1, fom.returnCurrentRoundNum())
+            y = []
+            l = []
+            for mem in temp_league_check.members.keys():
+                y.append([temp_league_check.table[mem][x][0] for x in range(1, fom.returnCurrentRoundNum())])
+                l.append(bot.get_user(int(mem)).name)
+
+            buf = savePlot(x, y, l)
+            # embed.add_field(name=f"{user1.name} League Rank ",
+            #                 value=f'#{temp_league_check.returnUserRank(str(user1.id))}',
+            #                 inline=True)
+            #
+            # embed.add_field(name=f"{user2.name} League Rank ",
+            #                 value=f'#{temp_league_check.returnUserRank(str(user2.id))}',
+            #                 inline=True)
+            #
+            # embed.add_field(name=f" Points delta ",
+            #                 value=f'{abs(temp_league_check.members[str(user1.id)] - temp_league_check.members[str(user2.id)])}',
+            #                 inline=True)
+            #
+            # embed.add_field(name=f" {user1.name} Current Points ",
+            #                 value=f'{temp_league_check.members[str(user1.id)]}',
+            #                 inline=True)
+            #
+            # embed.add_field(name=f" {user2.name} Current Points ",
+            #                 value=f'{temp_league_check.members[str(user2.id)]}',
+            #                 inline=True)
+
+            pfile = discord.File(buf, filename='temp.png')
+            buf.close()
+            embed.set_image(url="attachment://temp.png")
+
+        else:
+            embed.set_footer(text=' The server does not have any active leagues.')
+        if pfile is not None:
+            await interaction.followup.send(embed=embed, file=pfile)
+            pfile.close()
+        else:
+            await interaction.followup.send(embed=embed)
+
+
 ##############################################################################
 #
 #   Profile; fetches data from active league, if there is one;
@@ -1274,34 +1654,64 @@ async def driver(interaction: discord.Interaction, identifier: str):
 #
 ##############################################################################
 @bot.tree.command(name="profile", description="Displays a users profile in current server")
-async def profile(interaction: discord.Interaction, user: discord.User):
+async def profile(interaction: discord.Interaction, user: discord.User = None):
     logging.info(
-        f"{interaction.user.name} ({interaction.user.id}) triggered {interaction.command.name} at {datetime.now()}")
+        f"{interaction.user.name} ({interaction.user.id}) triggered {interaction.command.name} at {datetime.now()} with args: user = {user}")
     if interaction.guild is None:
         await interaction.response.send_message("Please perform this command on a server with an active league!")
     else:
         await interaction.response.defer()
+        if user is None:
+            user = interaction.user
         pfp = user.avatar.url
-        embed = discord.Embed(
-            title=f'{user.name}',
-            description="The one and only!",
-            color=discord.Color.red())
-        embed.set_thumbnail(url=pfp)
+        pfile = None
         if active_leagues.get(str(interaction.guild.id)) is not None:
             temp_league_check: db.Table = active_leagues[str(interaction.guild.id)]
-            if temp_league_check.members.get(str(user.id)) is not None:
-                embed.add_field(name="Current League Rank",
-                                value=f'Rank #{temp_league_check.returnUserRank(str(user.id))} !',
+            if temp_league_check.members.get(
+                    str(user.id)) is not None:
+                x = range(1, fom.returnCurrentRoundNum())
+                y = [[temp_league_check.table[str(user.id)][x][0] for x in range(1, fom.returnCurrentRoundNum())]]
+
+                buf = savePlot(x, y, [user.name])
+                embed = discord.Embed(
+                    title=f'{user.name}',
+                    description=f"**Team Motto:** {temp_league_check.mottos[str(user.id)]}",
+                    color=discord.Color.red())
+                embed.set_thumbnail(url=pfp)
+                embed.add_field(name="Current League Rank ",
+                                value=f'#{temp_league_check.returnUserRank(str(user.id))}',
                                 inline=True)
-                embed.add_field(name="Current Points", value=f'{temp_league_check.members[str(user.id)]}',
+                embed.add_field(name=" Current Points ", value=f'{temp_league_check.members[str(user.id)]}',
                                 inline=True)
+                embed.add_field(name=" Avg. Points per Race ",
+                                value=f'{round(int(temp_league_check.members[str(user.id)]) / fom.returnCurrentRoundNum(), 2)}',
+                                inline=True)
+                pfile = discord.File(buf, filename='temp.png')
+                buf.close()
+                embed.set_image(url="attachment://temp.png")
+
             else:
-                embed.add_field(name="Current League Standing", value="Not participating in current league.",
+                embed = discord.Embed(
+                    title=f'{user.name}',
+                    description="The one and only!",
+                    color=discord.Color.red())
+                embed.set_thumbnail(url=pfp)
+                embed.add_field(name="Current League Standing",
+                                value="This person is not participating in current league.",
                                 inline=False)
 
         else:
+            embed = discord.Embed(
+                title=f'{user.name}',
+                description="The one and only!",
+                color=discord.Color.red())
+            embed.set_thumbnail(url=pfp)
             embed.set_footer(text='The server does not have any active leagues.')
-        await interaction.followup.send(embed=embed)
+        if pfile is not None:
+            await interaction.followup.send(embed=embed, file=pfile)
+            pfile.close()
+        else:
+            await interaction.followup.send(embed=embed)
 
 
 ##############################################################################

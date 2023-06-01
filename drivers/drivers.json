@@ -9,10 +9,10 @@
 			"team": "Red Bull",
 			"team_color": "3671C6",
 			"number": "1",
-			"season_points": "44",
+			"season_points": "144",
 			"rank": "1",
-			"podiums": "1",
-			"wins": "1",
+			"podiums": "3",
+			"wins": "4",
 			"pf_img_url": "https://www.formula1.com/content/dam/fom-website/drivers/M/MAXVER01_Max_Verstappen/maxver01.png"
 		},
 		"PER": {
@@ -24,10 +24,10 @@
 			"team": "Red Bull",
 			"team_color": "3671C6",
 			"number": "11",
-			"season_points": "43",
+			"season_points": "105",
 			"rank": "2",
-			"podiums": "1",
-			"wins": "1",
+			"podiums": "3",
+			"wins": "2",
 			"pf_img_url": "https://www.formula1.com/content/dam/fom-website/drivers/S/SERPER01_Sergio_Perez/serper01.png"
 		},
 		"LEC": {
@@ -39,8 +39,8 @@
 			"team": "Ferrari",
 			"team_color": "F91536",
 			"number": "16",
-			"season_points": "6",
-			"rank": "8",
+			"season_points": "42",
+			"rank": "7",
 			"podiums": "0",
 			"wins": "0",
 			"pf_img_url": "https://www.formula1.com/content/dam/fom-website/drivers/C/CHALEC01_Charles_Leclerc/chalec01.png"
@@ -54,8 +54,8 @@
 			"team": "Mercedes",
 			"team_color": "6CD3BF",
 			"number": "63",
-			"season_points": "18",
-			"rank": "6",
+			"season_points": "50",
+			"rank": "5",
 			"podiums": "0",
 			"wins": "0",
 			"pf_img_url": "https://www.formula1.com/content/dam/fom-website/drivers/G/GEORUS01_George_Russell/georus01.png"
@@ -69,8 +69,8 @@
 			"team": "Ferrari",
 			"team_color": "F91536",
 			"number": "55",
-			"season_points": "20",
-			"rank": "4",
+			"season_points": "48",
+			"rank": "6",
 			"podiums": "0",
 			"wins": "0",
 			"pf_img_url": "https://www.formula1.com/content/dam/fom-website/drivers/C/CARSAI01_Carlos_Sainz/carsai01.png"
@@ -84,8 +84,8 @@
 			"team": "Mercedes",
 			"team_color": "6CD3BF",
 			"number": "44",
-			"season_points": "20",
-			"rank": "5",
+			"season_points": "69",
+			"rank": "4",
 			"podiums": "0",
 			"wins": "0",
 			"pf_img_url": "https://www.formula1.com/content/dam/fom-website/drivers/L/LEWHAM01_Lewis_Hamilton/lewham01.png"
@@ -99,8 +99,8 @@
 			"team": "McLaren",
 			"team_color": "F58020",
 			"number": "4",
-			"season_points": "0",
-			"rank": "20",
+			"season_points": "12",
+			"rank": "11",
 			"podiums": "0",
 			"wins": "0",
 			"pf_img_url": "https://www.formula1.com/content/dam/fom-website/drivers/L/LANNOR01_Lando_Norris/lannor01.png"
@@ -114,8 +114,8 @@
 			"team": "Alpine",
 			"team_color": "2293D1",
 			"number": "31",
-			"season_points": "4",
-			"rank": "10",
+			"season_points": "21",
+			"rank": "9",
 			"podiums": "0",
 			"wins": "0",
 			"pf_img_url": "https://www.formula1.com/content/dam/fom-website/drivers/E/ESTOCO01_Esteban_Ocon/estoco01.png"
@@ -129,9 +129,9 @@
 			"team": "Aston Martin",
 			"team_color": "358C75",
 			"number": "14",
-			"season_points": "30",
+			"season_points": "93",
 			"rank": "3",
-			"podiums": "2",
+			"podiums": "4",
 			"wins": "0",
 			"pf_img_url": "https://www.formula1.com/content/dam/fom-website/drivers/F/FERALO01_Fernando_Alonso/feralo01.png"
 		},
@@ -145,7 +145,7 @@
 			"team_color": "C92D4B",
 			"number": "77",
 			"season_points": "4",
-			"rank": "9",
+			"rank": "14",
 			"podiums": "0",
 			"wins": "0",
 			"pf_img_url": "https://www.formula1.com/content/dam/fom-website/drivers/V/VALBOT01_Valtteri_Bottas/valbot01.png"
@@ -159,8 +159,8 @@
 			"team": "McLaren",
 			"team_color": "F58020",
 			"number": "81",
-			"season_points": "0",
-			"rank": "19",
+			"season_points": "5",
+			"rank": "13",
 			"podiums": "0",
 			"wins": "0",
 			"pf_img_url": "https://www.formula1.com/content/dam/fom-website/drivers/O/OSCPIA01_Oscar_Piastri/oscpia01.png"
@@ -174,8 +174,8 @@
 			"team": "Alpine",
 			"team_color": "2293D1",
 			"number": "10",
-			"season_points": "4",
-			"rank": "11",
+			"season_points": "14",
+			"rank": "10",
 			"podiums": "0",
 			"wins": "0",
 			"pf_img_url": "https://www.formula1.com/content/dam/fom-website/drivers/P/PIEGAS01_Pierre_Gasly/piegas01.png"
@@ -189,8 +189,8 @@
 			"team": "Haas",
 			"team_color": "B6BABD",
 			"number": "20",
-			"season_points": "1",
-			"rank": "12",
+			"season_points": "2",
+			"rank": "17",
 			"podiums": "0",
 			"wins": "0",
 			"pf_img_url": "https://www.formula1.com/content/dam/fom-website/drivers/K/KEVMAG01_Kevin_Magnussen/kevmag01.png"
@@ -204,8 +204,8 @@
 			"team": "Aston Martin",
 			"team_color": "358C75",
 			"number": "18",
-			"season_points": "8",
-			"rank": "7",
+			"season_points": "27",
+			"rank": "8",
 			"podiums": "0",
 			"wins": "0",
 			"pf_img_url": "https://www.formula1.com/content/dam/fom-website/drivers/L/LANSTR01_Lance_Stroll/lanstr01.png"
@@ -219,8 +219,8 @@
 			"team": "AlphaTauri",
 			"team_color": "5E8FAA",
 			"number": "22",
-			"season_points": "0",
-			"rank": "14",
+			"season_points": "2",
+			"rank": "16",
 			"podiums": "0",
 			"wins": "0",
 			"pf_img_url": "https://www.formula1.com/content/dam/fom-website/drivers/Y/YUKTSU01_Yuki_Tsunoda/yuktsu01.png"
@@ -234,8 +234,8 @@
 			"team": "Alfa Romeo",
 			"team_color": "C92D4B",
 			"number": "24",
-			"season_points": "0",
-			"rank": "17",
+			"season_points": "2",
+			"rank": "15",
 			"podiums": "0",
 			"wins": "0",
 			"pf_img_url": "https://www.formula1.com/content/dam/fom-website/drivers/G/GUAZHO01_Guanyu_Zhou/guazho01.png"
@@ -250,7 +250,7 @@
 			"team_color": "37BEDD",
 			"number": "23",
 			"season_points": "1",
-			"rank": "13",
+			"rank": "18",
 			"podiums": "0",
 			"wins": "0",
 			"pf_img_url": "https://www.formula1.com/content/dam/fom-website/drivers/A/ALEALB01_Alexander_Albon/alealb01.png"
@@ -265,7 +265,7 @@
 			"team_color": "37BEDD",
 			"number": "2",
 			"season_points": "0",
-			"rank": "16",
+			"rank": "20",
 			"podiums": "0",
 			"wins": "0",
 			"pf_img_url": "https://www.formula1.com/content/dam/fom-website/drivers/L/LOGSAR01_Logan_Sargeant/logsar01.png"
@@ -280,7 +280,7 @@
 			"team_color": "5E8FAA",
 			"number": "45",
 			"season_points": "0",
-			"rank": "18",
+			"rank": "19",
 			"podiums": "0",
 			"wins": "0",
 			"pf_img_url": "https://www.formula1.com/content/dam/fom-website/drivers/N/NYCDEV01_Nyck_De%20Vries/nycdev01.png"
@@ -294,8 +294,8 @@
 			"team": "Haas",
 			"team_color": "B6BABD",
 			"number": "27",
-			"season_points": "0",
-			"rank": "15",
+			"season_points": "6",
+			"rank": "12",
 			"podiums": "0",
 			"wins": "0",
 			"pf_img_url": "https://www.formula1.com/content/dam/fom-website/drivers/N/NICHUL01_Nico_Hulkenberg/nichul01.png"
@@ -303,11 +303,19 @@
 	},
 	"results": {
 		"1": ["VER", "PER", "ALO", "SAI", "HAM", "STR", "RUS", "BOT", "GAS", "ALB", "TSU", "SAR", "MAG", "DEV", "HUL", "ZHO", "NOR", "OCO", "LEC", "PIA"],
-		"2": ["PER", "VER", "ALO", "RUS", "HAM", "SAI", "LEC", "OCO", "GAS", "MAG", "TSU", "HUL", "ZHO", "DEV", "PIA", "SAR", "NOR", "BOT", "ALB", "STR"]
+		"2": ["PER", "VER", "ALO", "RUS", "HAM", "SAI", "LEC", "OCO", "GAS", "MAG", "TSU", "HUL", "ZHO", "DEV", "PIA", "SAR", "NOR", "BOT", "ALB", "STR"],
+		"3": ["VER", "HAM", "ALO", "STR", "PER", "NOR", "HUL", "PIA", "ZHO", "TSU", "BOT", "SAI", "GAS", "OCO", "DEV", "SAR", "MAG", "RUS", "ALB", "LEC"],
+		"4": ["PER", "VER", "LEC", "ALO", "SAI", "HAM", "STR", "RUS", "NOR", "TSU", "PIA", "ALB", "MAG", "GAS", "OCO", "SAR", "HUL", "BOT", "ZHO", "DEV"],
+		"5": ["VER", "PER", "ALO", "RUS", "SAI", "HAM", "LEC", "GAS", "OCO", "MAG", "TSU", "STR", "BOT", "ALB", "HUL", "ZHO", "NOR", "DEV", "PIA", "SAR"],
+		"6": ["VER", "ALO", "OCO", "HAM", "RUS", "LEC", "GAS", "SAI", "NOR", "PIA", "BOT", "DEV", "ZHO", "ALB", "TSU", "PER", "HUL", "SAR", "MAG", "STR"]
 	},
 	"quali_results": {
 		"1": ["VER", "PER", "LEC", "SAI", "ALO", "RUS", "HAM", "STR", "OCO", "HUL", "NOR", "BOT", "ZHO", "TSU", "ALB", "SAR", "MAG", "PIA", "DEV", "GAS"],
-		"2": ["PER", "ALO", "RUS", "SAI", "STR", "OCO", "HAM", "PIA", "GAS", "HUL", "ZHO", "LEC", "MAG", "BOT", "VER", "TSU", "ALB", "DEV", "NOR", "SAR"]
+		"2": ["PER", "ALO", "RUS", "SAI", "STR", "OCO", "HAM", "PIA", "GAS", "HUL", "ZHO", "LEC", "MAG", "BOT", "VER", "TSU", "ALB", "DEV", "NOR", "SAR"],
+		"3": ["VER", "RUS", "HAM", "ALO", "SAI", "STR", "LEC", "ALB", "GAS", "HUL", "OCO", "TSU", "NOR", "MAG", "DEV", "PIA", "ZHO", "SAR", "BOT", "PER"],
+		"4": ["LEC", "VER", "PER", "SAI", "HAM", "ALO", "NOR", "TSU", "STR", "PIA", "RUS", "OCO", "ALB", "BOT", "SAR", "ZHO", "HUL", "MAG", "GAS", "DEV"],
+		"5": ["PER", "ALO", "SAI", "MAG", "GAS", "RUS", "LEC", "OCO", "VER", "BOT", "ALB", "HUL", "HAM", "ZHO", "DEV", "NOR", "TSU", "STR", "PIA", "SAR"],
+		"6": ["VER", "ALO", "LEC", "OCO", "SAI", "HAM", "GAS", "RUS", "TSU", "NOR", "PIA", "DEV", "ALB", "STR", "BOT", "SAR", "MAG", "HUL", "ZHO", "PER"]
 	},
 	"teamcolors": {
 		"LEC": "F91536",

@@ -128,12 +128,13 @@ class drivers_table:
 
     def returnDriverTLA(self, identifier):
         found_dr = 'NaN'
+        identifier = identifier.lower()
         dlist = list(self.drivers.values())
         for i in range(len(dlist)):
-            if dlist[i]['firstname'] == identifier or \
-                    dlist[i]['lastname'] == identifier or \
-                    dlist[i]['full_name'] == identifier or \
-                    dlist[i]['tla'] == identifier or \
+            if dlist[i]['firstname'].lower() == identifier or \
+                    dlist[i]['lastname'].lower() == identifier or \
+                    dlist[i]['full_name'].lower() == identifier or \
+                    dlist[i]['tla'].lower() == identifier or \
                     dlist[i]['number'] == identifier:
                 found_dr = dlist[i]['tla']
                 break

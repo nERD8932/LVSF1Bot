@@ -16,6 +16,7 @@ class Table:
         self.print_table = []
         self.rounds = rounds
         self.user_values = 5
+        self.mottos = {}
 
         if load_from_file:
             self.loadTable(guild_id)
@@ -28,6 +29,7 @@ class Table:
         uid = str(uid)
         user_val_init = [0]
         self.members[uid] = 0
+        self.mottos[uid] = "The one and only!"
         for i in range(self.user_values):
             user_val_init.append('NaN')
         append_list = [uid]
@@ -62,9 +64,12 @@ class Table:
         self.print_table = temp['print_table']
         self.rounds = temp['rounds']
         self.user_values = temp['user_values']
+        self.mottos = temp['mottos']
 
     def returnUserPoints(self, uid):
         uid = str(uid)
+        # if uid == "244873578175004672":
+        #     return -420
         psum = 0
         for j in self.table[uid][1:]:
             psum += j[0]

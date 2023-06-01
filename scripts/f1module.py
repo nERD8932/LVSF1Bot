@@ -30,7 +30,6 @@ schedule = [datetime(2023, 3, 4, 20, 29),
             datetime(2023, 4, 1, 10, 29),
             datetime(2023, 4, 29, 18, 59),
             datetime(2023, 5, 7, 1, 29),
-            datetime(2023, 5, 20, 19, 29),
             datetime(2023, 5, 27, 19, 29),
             datetime(2023, 6, 3, 19, 29),
             datetime(2023, 6, 18, 1, 29),
@@ -75,10 +74,13 @@ def returnNextEvent():
 
 
 def returnCurrentRoundNum():
-    next_event: ff1.events.EventSchedule = ff1.get_events_remaining().head(1)
-    ne_round = next_event.iat[0, 0]
+    # next_event: ff1.events.EventSchedule = ff1.get_events_remaining().head(1)
+    # ne_round = next_event.iat[0, 0]
     # print(next_event)
-    return ne_round
+    for i, date in enumerate(schedule):
+        if datetime.now() < date:
+            return i + 1
+    return 24
 
 
 def returnEvent(identifier):
@@ -149,6 +151,5 @@ def returnRaceResults(r):
 
 def verifyTeam(t):
     return t if t in teams else 'NaN'
-
 
 # print(returnCurrentRoundNum())
