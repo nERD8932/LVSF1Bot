@@ -334,7 +334,7 @@ async def checkex(interaction: discord.Interaction, hidden: bool = True):
                 if dr in team1 and dr in team2:
                     # logging.info("2 times picked")
                     exh[-1] = True
-                if dr == raceresults[0]:
+                if dr == raceresults[0] and dr in team1:
                     # logging.info("race winner")
                     exh[-1] = True
                 if dr == team1[1]:
@@ -449,15 +449,12 @@ async def draftbase(interaction: discord.Interaction, pick_1: str, pick_2: str, 
 
                         elif cgp > 2:
                             for dr in team:
-                                if dr in active_leagues[str(interaction.guild.id)].table[str(interaction.user.id)][
-                                    cgp - 1] and \
-                                        dr in active_leagues[str(interaction.guild.id)].table[str(interaction.user.id)][
-                                    cgp - 2]:
+                                if dr in active_leagues[str(interaction.guild.id)].table[str(interaction.user.id)][cgp - 1] and dr in active_leagues[str(interaction.guild.id)].table[str(interaction.user.id)][cgp - 2]:
                                     invalid = True
                                     await interaction.followup.send(
                                         "You can't pick exhausted drivers/constructors! Use /team to check what in "
                                         "your team is exhausted.")
-                                break
+                                    break
 
                     if team[0] not in [fom.drivers_table.drivers[dr]["team"] for dr in team[1:]]:
                         invalid = True
